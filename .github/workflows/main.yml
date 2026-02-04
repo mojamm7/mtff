@@ -1,22 +1,151 @@
-name: Windows - LiteManager
+name: Windows RDP - Performance Optimized
 
 on:
   workflow_dispatch:
+    inputs:
+      session_duration:
+        description: 'Session duration in minutes (max 360 = 6 hours)'
+        required: false
+        default: '360'
+        type: choice
+        options:
+          - '60'
+          - '120'
+          - '180'
+          - '360'
 
 jobs:
-  build:
-    name: Start Building...
+  rdp-session:
+    name: Windows RDP Session (Performance Optimized)
     runs-on: windows-latest
-    timeout-minutes: 9999
-    
+    timeout-minutes: ${{ github.event.inputs.session_duration || 360 }}
+
     steps:
-      - name: Downloading & Installing Essentials
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: System Information
         run: |
+          Write-Host "=== System Information ===" -ForegroundColor Cyan
+          Write-Host "OS: $(Get-CimInstance Win32_OperatingSystem | Select-Object -ExpandProperty Caption)"
+          Write-Host "CPU: $(Get-CimInstance Win32_Processor | Select-Object -ExpandProperty Name)"
+          Write-Host "Cores: $env:NUMBER_OF_PROCESSORS"
+          Write-Host "RAM: $([math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)) GB"
+          Write-Host "Disk: $([math]::Round((Get-PSDrive C | Select-Object -ExpandProperty Free) / 1GB, 2)) GB Free"
+          Write-Host "=========================" -ForegroundColor Cyan
+
+      - name: Performance Optimization - Disable Visual Effects
+        run: |
+          Write-Host "Optimizing Windows visual performance..." -ForegroundColor Yellow
+          # Disable animations and visual effects for better performance
+          Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "UserPreferencesMask" -Value ([byte[]](0x90,0x12,0x03,0x80,0x10,0x00,0x00,0x00))
+          Set-ItemProperty -Path "HKCU:\Control Panel\Desktop\WindowMetrics" -Name "MinAnimate" -Value "0"
+          # Disable wallpaper
+          Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "Wallpaper" -Value ""
+          Write-Host "Visual effects optimized" -ForegroundColor Green
+
+      - name: Performance Optimization - Configure Services
+        run: |
+          Write-Host "Configuring Windows services for performance..." -ForegroundColor Yellow
+          # Disable unnecessary services (non-critical ones)
+          $servicesToDisable = @('WSearch', 'SysMain', 'TabletInputService')
+          foreach ($service in $servicesToDisable) {
+            try {
+              Stop-Service -Name $service -Force -ErrorAction SilentlyContinue
+              Set-Service -Name $service -StartupType Disabled -ErrorAction SilentlyContinue
+              Write-Host "Disabled: $service" -ForegroundColor Gray
+            } catch {
+              Write-Host "Could not disable: $service" -ForegroundColor DarkGray
+            }
+          }
+          Write-Host "Services optimized" -ForegroundColor Green
+
+      - name: Install RDP Tools with Caching
+        run: |
+          Write-Host "Installing remote access tools..." -ForegroundColor Yellow
+
+          # Check if ngrok is needed, download from official source
+          $ngrokPath = "$env:TEMP\ngrok.zip"
+          if (-not (Test-Path "C:\ngrok\ngrok.exe")) {
+            Write-Host "Downloading ngrok..." -ForegroundColor Cyan
+            Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile $ngrokPath
+            Expand-Archive -Path $ngrokPath -DestinationPath "C:\ngrok" -Force
+            Write-Host "ngrok installed" -ForegroundColor Green
+          }
+
+          # Alternative: Download LiteManager
+          Write-Host "Downloading LiteManager..." -ForegroundColor Cyan
           Invoke-WebRequest -Uri "https://gitlab.com/chamod12/lm_win-10_github_rdp/-/raw/main/Downloads.bat" -OutFile "Downloads.bat"
           cmd /c Downloads.bat
+          Write-Host "RDP tools installed successfully" -ForegroundColor Green
 
-      - name: Connect to LiteManager
-        run: cmd /c show.bat
+      - name: Configure RDP for Performance
+        run: |
+          Write-Host "Configuring RDP settings for optimal performance..." -ForegroundColor Yellow
 
-      - name: Time Counter
-        run: cmd /c loop.bat
+          # Enable RDP
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+
+          # Configure RDP for better performance
+          # Disable printer redirection
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "fDisableCpm" -Value 1
+
+          # Enable RDP compression
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "fEnableCompression" -Value 1
+
+          # Configure firewall
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+          Write-Host "RDP configured for high performance" -ForegroundColor Green
+
+      - name: Connect to Remote Access
+        run: |
+          Write-Host "=== Connection Information ===" -ForegroundColor Cyan
+          Write-Host "Setting up remote connection..." -ForegroundColor Yellow
+          if (Test-Path "show.bat") {
+            cmd /c show.bat
+          } else {
+            Write-Host "Manual connection required" -ForegroundColor Yellow
+            Write-Host "Computer Name: $env:COMPUTERNAME" -ForegroundColor White
+            Write-Host "User: $env:USERNAME" -ForegroundColor White
+          }
+          Write-Host "============================" -ForegroundColor Cyan
+
+      - name: Performance Monitor
+        run: |
+          Write-Host "Starting performance-optimized session..." -ForegroundColor Green
+          Write-Host "Session will run for ${{ github.event.inputs.session_duration || 360 }} minutes" -ForegroundColor Cyan
+
+          # Optimized loop with less resource usage
+          if (Test-Path "loop.bat") {
+            cmd /c loop.bat
+          } else {
+            # Lightweight keep-alive loop
+            $duration = [int]("${{ github.event.inputs.session_duration }}" -replace '[^0-9]','')
+            if ($duration -eq 0) { $duration = 360 }
+            $endTime = (Get-Date).AddMinutes($duration)
+
+            while ((Get-Date) -lt $endTime) {
+              $remaining = ($endTime - (Get-Date)).TotalMinutes
+              Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Session active - $([math]::Round($remaining, 1)) minutes remaining" -ForegroundColor Gray
+
+              # Performance stats every 10 minutes
+              if ([int]$remaining % 10 -eq 0) {
+                $cpu = Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 1 -MaxSamples 1 | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue
+                $mem = Get-Counter '\Memory\Available MBytes' -SampleInterval 1 -MaxSamples 1 | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue
+                Write-Host "CPU: $([math]::Round($cpu, 1))% | Free RAM: $([math]::Round($mem/1024, 2)) GB" -ForegroundColor Cyan
+              }
+
+              Start-Sleep -Seconds 60
+            }
+
+            Write-Host "Session completed successfully" -ForegroundColor Green
+          }
+
+      - name: Cleanup on Failure
+        if: failure()
+        run: |
+          Write-Host "Cleaning up due to workflow failure..." -ForegroundColor Red
+          # Cleanup temporary files
+          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Cleanup completed" -ForegroundColor Yellow
