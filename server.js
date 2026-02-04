@@ -1,10 +1,14 @@
 const express = require('express');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory database with RDP creation guides
 const rdpGuides = [
@@ -219,10 +223,27 @@ app.get('/', (req, res) => {
 app.get('/api/search', (req, res) => {
   const query = req.query.q?.toLowerCase() || '';
 
+  // If no query, return all guides
   if (!query) {
-    return res.status(400).json({
-      error: "Query parameter 'q' is required",
-      example: "/api/search?q=free rdp"
+    return res.json({
+      query: '',
+      count: rdpGuides.length,
+      results: rdpGuides.map(guide => ({
+        id: guide.id,
+        provider: guide.method,
+        title: guide.title,
+        description: guide.pros.slice(0, 2).join(', '),
+        performanceRating: guide.performance === 'excellent' ? 'high' : 'medium',
+        difficulty: guide.cons.some(c => c.toLowerCase().includes('complex')) ? 'Advanced' : 'Beginner',
+        specs: {
+          ram: guide.resources.ram,
+          cpu: guide.resources.cpu,
+          storage: guide.resources.storage,
+          duration: guide.duration
+        },
+        steps: guide.steps,
+        performanceTips: performanceTips[0].tips.slice(0, 3)
+      }))
     });
   }
 
@@ -237,12 +258,19 @@ app.get('/api/search', (req, res) => {
     count: results.length,
     results: results.map(guide => ({
       id: guide.id,
+      provider: guide.method,
       title: guide.title,
-      method: guide.method,
-      performance: guide.performance,
-      duration: guide.duration,
-      tags: guide.tags,
-      resources: guide.resources
+      description: guide.pros.slice(0, 2).join(', '),
+      performanceRating: guide.performance === 'excellent' ? 'high' : 'medium',
+      difficulty: guide.cons.some(c => c.toLowerCase().includes('complex')) ? 'Advanced' : 'Beginner',
+      specs: {
+        ram: guide.resources.ram,
+        cpu: guide.resources.cpu,
+        storage: guide.resources.storage,
+        duration: guide.duration
+      },
+      steps: guide.steps,
+      performanceTips: performanceTips[0].tips.slice(0, 3)
     }))
   });
 });
@@ -277,32 +305,52 @@ app.get('/api/guides/:id', (req, res) => {
     return res.status(404).json({ error: "Guide not found" });
   }
 
-  res.json(guide);
+  res.json({
+    id: guide.id,
+    provider: guide.method,
+    title: guide.title,
+    description: guide.pros.slice(0, 2).join(', '),
+    performanceRating: guide.performance === 'excellent' ? 'high' : 'medium',
+    difficulty: guide.cons.some(c => c.toLowerCase().includes('complex')) ? 'Advanced' : 'Beginner',
+    specs: {
+      ram: guide.resources.ram,
+      cpu: guide.resources.cpu,
+      storage: guide.resources.storage,
+      duration: guide.duration
+    },
+    steps: guide.steps,
+    performanceTips: performanceTips.flatMap(cat => cat.tips).slice(0, 5)
+  });
 });
 
 // Get performance tips
 app.get('/api/performance-tips', (req, res) => {
+  const formattedTips = {};
+  performanceTips.forEach(cat => {
+    formattedTips[cat.category] = cat.tips;
+  });
   res.json({
-    tips: performanceTips
+    tips: formattedTips
   });
 });
 
 // Compare guides
 app.get('/api/compare', (req, res) => {
   const comparison = rdpGuides.map(guide => ({
-    method: guide.method,
-    performance: guide.performance,
+    provider: guide.method,
+    ram: guide.resources.ram,
+    cpu: guide.resources.cpu,
+    storage: guide.resources.storage,
     duration: guide.duration,
-    creditCardRequired: guide.cons.some(con => con.toLowerCase().includes('credit card')),
-    alwaysFree: guide.tags.includes('always-free') || guide.tags.includes('free'),
-    resources: guide.resources,
+    difficulty: guide.cons.some(c => c.toLowerCase().includes('complex')) ? 'Advanced' : 'Beginner',
+    creditCardRequired: guide.cons.some(con => con.toLowerCase().includes('credit card')) ? 'Yes' : 'No',
     bestFor: guide.performance === 'excellent' && guide.tags.includes('always-free')
-      ? 'Best overall'
+      ? 'Best overall - always free with excellent performance'
       : guide.method === 'GitHub Actions'
-      ? 'Easiest and truly free'
+      ? 'Easiest and truly free (no credit card)'
       : guide.performance === 'excellent'
       ? 'Best performance'
-      : 'Good option'
+      : 'Good option for testing'
   }));
 
   res.json({

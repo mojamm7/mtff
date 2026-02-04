@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free RDP Search & Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            display: grid;
+            gap: 20px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .card .provider {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .card .specs {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+
+        .spec-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .spec-item strong {
+            color: #667eea;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .action-btn {
+            padding: 15px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            color: #667eea;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .action-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .error {
+            background: #ff4444;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .performance-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ Free RDP Search & Guide</h1>
+            <p>Find and create high-performance free RDP servers</p>
+        </div>
+
+        <div class="content">
+            <div class="search-section">
+                <div class="search-box">
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search for RDP providers (e.g., 'free', 'google', 'aws')..."
+                        onkeypress="handleKeyPress(event)"
+                    >
+                    <button class="btn" onclick="searchRDP()">Search</button>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="action-btn" onclick="showAllGuides()">📚 All Guides</button>
+                    <button class="action-btn" onclick="showPerformanceTips()">⚡ Performance Tips</button>
+                    <button class="action-btn" onclick="showComparison()">📊 Compare Providers</button>
+                    <button class="action-btn" onclick="showHighPerformance()">🚀 Best Performance</button>
+                </div>
+            </div>
+
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                searchRDP();
+            }
+        }
+
+        async function searchRDP() {
+            const query = document.getElementById('searchInput').value;
+            const resultsDiv = document.getElementById('results');
+
+            if (!query.trim()) {
+                resultsDiv.innerHTML = '<div class="error">Please enter a search term</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="loading">🔍 Searching...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.results && data.results.length > 0) {
+                    displayResults(data.results);
+                } else {
+                    resultsDiv.innerHTML = '<div class="card"><p>No results found. Try searching for: free, google, aws, azure, oracle</p></div>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function showAllGuides() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">📚 Loading all guides...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/search?q=`);
+                const data = await response.json();
+                displayResults(data.results);
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function showPerformanceTips() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">⚡ Loading performance tips...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/performance-tips`);
+                const data = await response.json();
+
+                let html = '<div class="card">';
+                html += '<h3>⚡ Performance Optimization Tips</h3>';
+
+                for (const [category, tips] of Object.entries(data.tips)) {
+                    html += `<h4 style="margin-top: 20px; color: #667eea;">${category}</h4><ul style="margin-left: 20px; margin-top: 10px;">`;
+                    tips.forEach(tip => {
+                        html += `<li style="margin-bottom: 8px; color: #555;">${tip}</li>`;
+                    });
+                    html += '</ul>';
+                }
+
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function showComparison() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">📊 Loading comparison...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/compare`);
+                const data = await response.json();
+
+                let html = '<div class="card">';
+                html += '<h3>📊 Provider Comparison</h3>';
+
+                data.comparison.forEach(provider => {
+                    html += `
+                        <div style="margin: 20px 0; padding: 15px; background: white; border-radius: 8px;">
+                            <h4 style="color: #667eea;">${provider.provider}</h4>
+                            <div class="specs">
+                                <div class="spec-item"><strong>RAM:</strong> ${provider.ram}</div>
+                                <div class="spec-item"><strong>CPU:</strong> ${provider.cpu}</div>
+                                <div class="spec-item"><strong>Storage:</strong> ${provider.storage}</div>
+                                <div class="spec-item"><strong>Duration:</strong> ${provider.duration}</div>
+                                <div class="spec-item"><strong>Difficulty:</strong> ${provider.difficulty}</div>
+                            </div>
+                            <p style="margin-top: 10px;"><strong>Best For:</strong> ${provider.bestFor}</p>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function showHighPerformance() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">🚀 Loading high-performance guide...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/guides/1`);
+                const data = await response.json();
+                displaySingleGuide(data);
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            let html = '<div class="results">';
+
+            results.forEach(guide => {
+                html += `
+                    <div class="card">
+                        <div class="provider">${guide.provider}</div>
+                        ${guide.performanceRating === 'high' ? '<span class="performance-badge">HIGH PERFORMANCE</span>' : ''}
+                        <h3>${guide.title}</h3>
+                        <p>${guide.description}</p>
+                        <div class="specs">
+                            <div class="spec-item"><strong>RAM:</strong> ${guide.specs.ram}</div>
+                            <div class="spec-item"><strong>CPU:</strong> ${guide.specs.cpu}</div>
+                            <div class="spec-item"><strong>Storage:</strong> ${guide.specs.storage}</div>
+                            <div class="spec-item"><strong>Duration:</strong> ${guide.specs.duration}</div>
+                            <div class="spec-item"><strong>Difficulty:</strong> ${guide.difficulty}</div>
+                        </div>
+                        <button class="btn" style="margin-top: 15px;" onclick="showGuideDetails(${guide.id})">
+                            View Full Guide
+                        </button>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        }
+
+        async function showGuideDetails(id) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">📖 Loading guide details...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/guides/${id}`);
+                const data = await response.json();
+                displaySingleGuide(data);
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        function displaySingleGuide(guide) {
+            const resultsDiv = document.getElementById('results');
+
+            let html = `
+                <div class="card">
+                    <div class="provider">${guide.provider}</div>
+                    ${guide.performanceRating === 'high' ? '<span class="performance-badge">HIGH PERFORMANCE</span>' : ''}
+                    <h3>${guide.title}</h3>
+                    <p>${guide.description}</p>
+
+                    <h4 style="margin-top: 20px; color: #667eea;">📋 Steps:</h4>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+            `;
+
+            guide.steps.forEach(step => {
+                html += `<li style="margin-bottom: 10px; color: #555;">${step}</li>`;
+            });
+
+            html += `
+                    </ol>
+
+                    <h4 style="margin-top: 20px; color: #667eea;">⚡ Performance Tips:</h4>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+            `;
+
+            guide.performanceTips.forEach(tip => {
+                html += `<li style="margin-bottom: 8px; color: #555;">${tip}</li>`;
+            });
+
+            html += `
+                    </ul>
+
+                    <div class="specs">
+                        <div class="spec-item"><strong>RAM:</strong> ${guide.specs.ram}</div>
+                        <div class="spec-item"><strong>CPU:</strong> ${guide.specs.cpu}</div>
+                        <div class="spec-item"><strong>Storage:</strong> ${guide.specs.storage}</div>
+                        <div class="spec-item"><strong>Duration:</strong> ${guide.specs.duration}</div>
+                        <div class="spec-item"><strong>Difficulty:</strong> ${guide.difficulty}</div>
+                    </div>
+
+                    <button class="btn" style="margin-top: 15px;" onclick="showAllGuides()">
+                        ← Back to All Guides
+                    </button>
+                </div>
+            `;
+
+            resultsDiv.innerHTML = html;
+        }
+
+        // Load all guides on page load
+        window.onload = function() {
+            showAllGuides();
+        };
+    </script>
+</body>
+</html>
